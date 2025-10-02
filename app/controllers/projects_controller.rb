@@ -1,11 +1,12 @@
 class ProjectsController < ApplicationController
+  skip_before_action :verify_authenticity_token, only: [:lookup]
   before_action :set_period_vars, only: [:show, :engagement, :productivity, :finance, :responsiveness, :security]
   before_action :set_range_and_period, only: [:show]
   before_action :authenticate_user!, only: [:index, :new, :create, :add_to_list, :remove_from_list, :create_collection_from_dependencies]
   before_action :set_collection, if: :nested_route?
   before_action :set_project_and_redirect_legacy, only: [:show, :packages, :commits, :releases, :issues, :advisories, :security, :adoption, :engagement, :dependencies, :productivity, :finance, :responsiveness, :sync, :meta, :syncing, :owner_collection, :create_collection_from_dependencies]
   before_action :redirect_if_syncing, only: [:show, :adoption, :engagement, :dependencies, :productivity, :finance, :responsiveness, :packages, :commits, :releases, :issues, :advisories, :security]
-  
+
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
 
   def show

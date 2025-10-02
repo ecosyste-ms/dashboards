@@ -1315,16 +1315,25 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = create(:project, :with_repository, sync_status: 'syncing')
     project.update_column(:last_synced_at, 1.day.ago)  # Previously synced
     project.update_column(:updated_at, 2.minutes.ago)  # Currently syncing (not stuck)
-    
+
     # Verify it's actively syncing but was previously synced
     refute project.sync_stuck?
     refute project.never_synced?
-    
+
     get project_url(project)
-    
+
     # Should show main project page, not syncing page
     assert_response :success
     assert_template :show
+  end
+
+  test "should allow lookup without CSRF token" do
+    existing_project = create(:project, url: "https://github.com/test/repo")
+
+    # Simulate request without CSRF token (like from external link)
+    get lookup_projects_url, params: { url: existing_project.url }
+
+    assert_redirected_to project_url(existing_project)
   end
 
 end
