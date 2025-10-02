@@ -201,8 +201,14 @@ module ApplicationHelper
     uri = URI.parse(request.url)
     current_params = Rack::Utils.parse_query(uri.query || '')
     merged_params = current_params.merge(new_params.stringify_keys)
-    
+
     uri.query = merged_params.any? ? merged_params.to_query : nil
     uri.to_s
+  end
+
+  def bootstrap_icon(symbol, options = {})
+    return "" if symbol.nil?
+    icon = BootstrapIcons::BootstrapIcon.new(symbol, options)
+    content_tag(:svg, icon.path.html_safe, icon.options)
   end
 end
