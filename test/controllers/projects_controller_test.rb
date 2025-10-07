@@ -972,32 +972,71 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   # Show page with realistic data test
   test "should show project page with comprehensive data" do
     project = create(:project, :with_repository, last_synced_at: 30.minutes.ago)
-    
+
     # Add realistic test data
     create_list(:commit, 10, project: project, timestamp: 1.month.ago)
     create_list(:issue, 8, project: project, state: "open", created_at: 2.weeks.ago)
     create_list(:issue, 5, project: project, state: "closed", created_at: 3.weeks.ago, closed_at: 1.week.ago)
     create_list(:package, 3, project: project)
     create_list(:tag, 2, project: project, published_at: 1.month.ago)
-    
+
     get project_url(project)
     assert_response :success
     assert_template :show
-    
+
     # Verify project data is assigned
     assigned_project = assigns(:project)
     assert_equal project, assigned_project
-    
+
     # Verify chart data is assigned
     assert_not_nil assigns(:commits_per_period)
     assert_not_nil assigns(:commits_this_period)
     assert_not_nil assigns(:commits_last_period)
-    
+
     # Verify project has the data we created
     assert_equal 10, project.commits.count
     assert_equal 13, project.issues.count  # 8 open + 5 closed
     assert_equal 3, project.packages.count
     assert_equal 2, project.tags.count
+  end
+
+  test "should handle package with nil ranking average" do
+    project = create(:project, :with_repository, last_synced_at: 30.minutes.ago)
+
+    # Create package with nil ranking average
+    package = create(:package, project: project)
+    package.update(metadata: { 'rankings' => { 'average' => nil } })
+
+    get project_url(project)
+    assert_response :success
+    assert_template :show
+
+    # Verify ranking widget is not displayed when ranking is nil
+    assert_select 'h5.card-title', text: 'Ranking', count: 0
+  end
+
+  test "should prefer package with valid ranking over nil ranking" do
+    project = create(:project, :with_repository, last_synced_at: 30.minutes.ago)
+
+    # Create package without ranking (should be ignored)
+    package_no_rank = create(:package, project: project, name: 'no-rank-package')
+    package_no_rank.update(metadata: { 'rankings' => { 'average' => nil } })
+
+    # Create package with ranking (should be selected)
+    package_with_rank = create(:package, project: project, name: 'ranked-package')
+    package_with_rank.update(metadata: {
+      'rankings' => { 'average' => 5.3 },
+      'registry' => { 'name' => 'npm' }
+    })
+
+    get project_url(project)
+    assert_response :success
+    assert_template :show
+
+    # Verify ranking widget is displayed with the ranked package
+    assert_select 'h5.card-title', text: 'Ranking'
+    assert_select 'span.stat-card-title', text: /Top 5\.3%/
+    assert_select 'span.stat-card-text', text: /on npm/
   end
 
   test "should create collection from dependencies when logged in" do
