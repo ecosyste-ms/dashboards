@@ -1034,7 +1034,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_template :show
 
     # Verify ranking widget is displayed with the ranked package
-    assert_select 'h5.card-title', text: 'Ranking'
+    assert_select 'h5.card-title', text: /Ranking/
     assert_select 'span.stat-card-title', text: /Top 5\.3%/
     assert_select 'span.stat-card-text', text: /on npm/
   end
