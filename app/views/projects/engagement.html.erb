@@ -38,7 +38,7 @@
                   <% percent = ((count / total) * 100).round(1) %>
                   <div class="graph-key__item">
                     <span class="dot dot-<%= ('a'.ord + index).chr %>"></span>
-                    <% display_role = role == "NONE" ? "Community" : role.capitalize %>
+                    <% display_role = role == "NONE" ? "Community" : (role&.capitalize || "Unknown") %>
                     <span class="label"><%= display_role %> <%= percent %>%</span>
                   </div>
                 <% end %>

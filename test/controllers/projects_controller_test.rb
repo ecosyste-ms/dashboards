@@ -651,9 +651,33 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "should handle nil author_association in engagement page" do
+    project = create(:project, :with_repository, last_synced_at: 30.minutes.ago)
+
+    travel_to Time.parse('2024-02-15') do
+      # Create issues in January 2024 (the period being viewed)
+      create(:issue, project: project, state: "open", created_at: Time.parse('2024-01-15'), author_association: nil, user: 'user1')
+      create(:issue, project: project, state: "open", created_at: Time.parse('2024-01-16'), author_association: "MEMBER", user: 'user2')
+      create(:issue, project: project, state: "open", created_at: Time.parse('2024-01-17'), author_association: "CONTRIBUTOR", user: 'user3')
+
+      get project_url(project, tab: 'engagement')
+      assert_response :success
+      assert_template :engagement
+
+      # Verify the page renders without error
+      assert_select 'h1', text: 'Engagement'
+      assert_select '.graph-key__item', minimum: 1
+
+      # Verify "Unknown" label appears for nil author_association
+      assert_select 'span.label', /Unknown/
+      assert_select 'span.label', /Member/
+      assert_select 'span.label', /Contributor/
+    end
+  end
+
   test "should show productivity page with comprehensive metrics" do
     project = create(:project, :with_repository, last_synced_at: 30.minutes.ago)
-    
+
     # Add test data for productivity metrics
     create_list(:commit, 8, project: project, timestamp: 2.weeks.ago)
     create_list(:tag, 2, project: project, published_at: 3.weeks.ago)
