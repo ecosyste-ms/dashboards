@@ -183,10 +183,13 @@ class ProjectsController < ApplicationController
       # If we have a valid purl but didn't find project, try to resolve repository URL
       if purl_obj
         repository_url = resolve_repository_url_from_purl(purl_obj)
-        
+
         if repository_url
+          # Normalize URL to ensure it has a scheme
+          normalized_url = normalize_repository_url(repository_url)
+
           # Create project directly and start syncing
-          project = Project.find_or_create_by(url: repository_url.downcase)
+          project = Project.find_or_create_by(url: normalized_url)
           project.sync_async if project.persisted?
           redirect_to project
         else
@@ -707,14 +710,27 @@ class ProjectsController < ApplicationController
     @project.find_existing_owner_collection
   end
 
+  def normalize_repository_url(url)
+    return url if url.blank?
+
+    normalized = url.strip.downcase
+
+    # Add https:// scheme if missing
+    unless normalized.match?(/\A[a-z][a-z0-9+.-]*:/i)
+      normalized = "https://#{normalized}"
+    end
+
+    normalized
+  end
+
   def resolve_repository_url_from_purl(purl_obj)
     begin
       # Remove version for API lookup
       purl_without_version = purl_obj.with(version: nil).to_s
-      
+
       # Call packages.ecosyste.ms API
       response = Faraday.get("https://packages.ecosyste.ms/api/v1/packages/lookup", { purl: purl_without_version }, {'User-Agent' => 'dashboards.ecosyste.ms'})
-      
+
       if response.success?
         data = JSON.parse(response.body)
         if data.is_a?(Array) && data.any?
@@ -726,7 +742,7 @@ class ProjectsController < ApplicationController
     rescue => e
       Rails.logger.debug "Failed to resolve repository URL from purl: #{e.message}"
     end
-    
+
     nil
   end
 end

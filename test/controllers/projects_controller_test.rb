@@ -459,15 +459,46 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "should fallback gracefully when purl conversion fails" do
     non_existent_url = "https://invalid.registry.com/package/nonexistent"
-    
+
     # Mock the Purl conversion to raise an error
     Purl.expects(:from_registry_url).with(non_existent_url).raises(StandardError.new("Invalid URL"))
-    
+
     assert_no_difference('Project.count') do
       post lookup_projects_url, params: { url: non_existent_url }
     end
-    
+
     assert_redirected_to new_project_path(url: non_existent_url)
+  end
+
+  test "should normalize repository URL without scheme when creating from package lookup" do
+    registry_url = "https://www.npmjs.com/package/test-package"
+    repository_url_without_scheme = "github.com/user/test-package"
+    normalized_url = "https://github.com/user/test-package"
+
+    # Mock PURL conversion
+    mock_purl = mock()
+    mock_purl_without_version = mock()
+    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice
+    mock_purl_without_version.expects(:to_s).returns('pkg:npm/test-package').twice
+    Purl.expects(:from_registry_url).with(registry_url).returns(mock_purl)
+
+    # Mock API response returning URL without scheme
+    mock_response = mock()
+    mock_response.expects(:success?).returns(true)
+    mock_response.expects(:body).returns([{ 'repository_url' => repository_url_without_scheme }].to_json)
+    Faraday.expects(:get).with("https://packages.ecosyste.ms/api/v1/packages/lookup", { purl: 'pkg:npm/test-package' }, {'User-Agent' => 'dashboards.ecosyste.ms'}).returns(mock_response)
+
+    # Mock sync_async to avoid background job in test
+    Project.any_instance.expects(:sync_async)
+
+    assert_difference('Project.count', 1) do
+      post lookup_projects_url, params: { url: registry_url }
+    end
+
+    created_project = Project.last
+    assert_equal normalized_url, created_project.url
+    assert_equal "github.com/user/test-package", created_project.slug
+    assert_redirected_to project_path(created_project)
   end
 
   test "should lookup project by purl parameter" do
