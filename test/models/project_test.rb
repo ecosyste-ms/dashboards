@@ -59,14 +59,29 @@ class ProjectTest < ActiveSupport::TestCase
 
   test "find_by_slug works with different cases" do
     project = Project.create!(url: "https://github.com/octocat/hello-world")
-    
+
     found_lower = Project.find_by_slug("github.com/octocat/hello-world")
     found_upper = Project.find_by_slug("GITHUB.COM/OCTOCAT/HELLO-WORLD")
     found_mixed = Project.find_by_slug("GitHub.com/OctoCat/Hello-World")
-    
+
     assert_equal project, found_lower
     assert_equal project, found_upper
     assert_equal project, found_mixed
+  end
+
+  test "generates slug from URL without scheme" do
+    project = Project.create!(url: "github.com/calliope-project/calliope")
+    assert_equal "github.com/calliope-project/calliope", project.slug
+  end
+
+  test "generates slug from URL with http scheme" do
+    project = Project.create!(url: "http://github.com/example/test")
+    assert_equal "github.com/example/test", project.slug
+  end
+
+  test "generates slug from URL without scheme and with www" do
+    project = Project.create!(url: "www.github.com/example/test")
+    assert_equal "github.com/example/test", project.slug
   end
   test "github_pages_to_repo_url" do
     project = Project.new

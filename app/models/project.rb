@@ -1613,32 +1613,39 @@ class Project < ApplicationRecord
 
   def generate_slug
     return if url.blank?
-    
+
     begin
+      url_to_parse = url.strip
+
+      # Add scheme if missing (common for user input like "github.com/owner/repo")
+      unless url_to_parse.match?(/\A[a-z][a-z0-9+.-]*:/i)
+        url_to_parse = "https://#{url_to_parse}"
+      end
+
       # Parse URL safely
-      uri = URI.parse(url.strip)
+      uri = URI.parse(url_to_parse)
       return unless uri.host && uri.path
-      
+
       # Build safe slug from parsed components
       host = uri.host.downcase.gsub(/^www\./, '')
       path = uri.path.gsub(/^\//, '').gsub(/\/$/, '')
-      
+
       # Only allow valid characters
       host = host.gsub(/[^a-zA-Z0-9._-]/, '')
       path = path.gsub(/[^a-zA-Z0-9._\/-]/, '')
-      
+
       # Ensure we have both host and path
       return if host.blank? || path.blank?
-      
+
       candidate_slug = "#{host}/#{path}".downcase
-      
+
       # Final validation - must match expected format
       if candidate_slug.match?(/\A[a-zA-Z0-9._-]+\/[a-zA-Z0-9._\/-]+\z/)
         self.slug = candidate_slug
       else
         Rails.logger.warn "Could not generate valid slug for URL: #{url}"
       end
-      
+
     rescue URI::InvalidURIError => e
       Rails.logger.error "Invalid URL format for project: #{url} - #{e.message}"
     end
