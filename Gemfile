@@ -47,7 +47,7 @@ gem 'octicons_helper'
 gem 'redis'
 gem 'purl'
 gem 'dalli'
-gem "connection_pool", "<3"
+gem "connection_pool", "<4"
 gem 'csv'
 gem 'ostruct'
 gem "omniauth-github"
