@@ -13,7 +13,7 @@ class ProjectsController < ApplicationController
     # Handle tab content if tab parameter is present
     if params[:tab].present?
       handle_tab_content
-      return
+      return if performed?
     end
     
     # Default overview tab content (only if no tab is specified)
@@ -678,11 +678,14 @@ class ProjectsController < ApplicationController
   end
 
   def year
-    (params[:year] || 1.month.ago.year).to_i
+    y = (params[:year].presence || 1.month.ago.year).to_i
+    y.between?(1970, 2100) ? y : 1.month.ago.year
   end
 
   def month
-    range == 'month' ? (params[:month] || 1.month.ago.month).to_i : nil
+    return nil unless range == 'month'
+    m = (params[:month].presence || 1.month.ago.month).to_i
+    m.between?(1, 12) ? m : 1.month.ago.month
   end
 
   def period_date
