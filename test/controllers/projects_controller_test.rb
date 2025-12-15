@@ -246,6 +246,49 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "should show overview page when given invalid tab parameter" do
+    project = create(:project, :with_repository)
+
+    # This simulates a path traversal attempt or any invalid tab parameter
+    get project_url(project, tab: '../../../etc/passwd')
+    assert_response :success
+    assert_template :show
+
+    # Verify overview content is displayed (instance variables are set correctly)
+    assert_not_nil assigns(:new_prs_this_period)
+    assert_not_nil assigns(:new_prs_last_period)
+  end
+
+  test "should handle empty month parameter gracefully" do
+    project = create(:project, :with_repository)
+
+    # Empty month parameter should fall back to default, not crash
+    get project_url(project, tab: 'security', month: '', year: '2019')
+    assert_response :success
+  end
+
+  test "should handle invalid month parameter gracefully" do
+    project = create(:project, :with_repository)
+
+    # Month 0 or 13 should fall back to default
+    get project_url(project, tab: 'security', month: '0', year: '2019')
+    assert_response :success
+
+    get project_url(project, tab: 'security', month: '13', year: '2019')
+    assert_response :success
+  end
+
+  test "should handle invalid year parameter gracefully" do
+    project = create(:project, :with_repository)
+
+    # Invalid years should fall back to default
+    get project_url(project, tab: 'security', year: '', month: '6')
+    assert_response :success
+
+    get project_url(project, tab: 'security', year: '0', month: '6')
+    assert_response :success
+  end
+
   test "should show project security" do
     project = create(:project, :with_repository)
     get project_url(project, tab: 'security')
