@@ -1075,4 +1075,70 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal [], links
   end
 
+  test "repo_funding_links handles array values for liberapay" do
+    project = build(:project)
+    project.stubs(:repository).returns({
+      'metadata' => {
+        'funding' => {
+          'liberapay' => ['kornel']
+        }
+      }
+    })
+
+    links = project.repo_funding_links
+    assert_equal ["https://liberapay.com/kornel"], links
+  end
+
+  test "repo_funding_links handles array values for multiple platforms" do
+    project = build(:project)
+    project.stubs(:repository).returns({
+      'metadata' => {
+        'funding' => {
+          'ko_fi' => ['user1', 'user2'],
+          'patreon' => ['creator']
+        }
+      }
+    })
+
+    links = project.repo_funding_links
+    assert_includes links, "https://ko-fi.com/user1"
+    assert_includes links, "https://ko-fi.com/user2"
+    assert_includes links, "https://patreon.com/creator"
+  end
+
+  test "repo_funding_links handles string values unchanged" do
+    project = build(:project)
+    project.stubs(:repository).returns({
+      'metadata' => {
+        'funding' => {
+          'liberapay' => 'kornel'
+        }
+      }
+    })
+
+    links = project.repo_funding_links
+    assert_equal ["https://liberapay.com/kornel"], links
+  end
+
+  test "normalize_funding_link returns nil for invalid URIs" do
+    project = build(:project)
+
+    result = project.normalize_funding_link('https://liberapay.com/["kornel"]')
+    assert_nil result
+  end
+
+  test "other_funding_links filters out invalid URIs" do
+    project = build(:project)
+    project.stubs(:funding_links).returns([
+      'https://liberapay.com/validuser',
+      'https://liberapay.com/["invalid"]',
+      'https://ko-fi.com/gooduser'
+    ])
+
+    links = project.other_funding_links
+    assert_includes links, "https://liberapay.com/validuser"
+    assert_includes links, "https://ko-fi.com/gooduser"
+    refute links.any? { |l| l&.include?('["invalid"]') }
+  end
+
 end

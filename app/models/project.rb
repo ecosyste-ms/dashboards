@@ -560,31 +560,31 @@ class Project < ApplicationRecord
       when "github"
         Array(v).map{|username| "https://github.com/sponsors/#{username}" }
       when "tidelift"
-        "https://tidelift.com/funding/github/#{v}"
+        Array(v).map{|name| "https://tidelift.com/funding/github/#{name}" }
       when "community_bridge"
-        "https://funding.communitybridge.org/projects/#{v}"
+        Array(v).map{|name| "https://funding.communitybridge.org/projects/#{name}" }
       when "issuehunt"
-        "https://issuehunt.io/r/#{v}"
+        Array(v).map{|name| "https://issuehunt.io/r/#{name}" }
       when "open_collective"
-        "https://opencollective.com/#{v}"
+        Array(v).map{|name| "https://opencollective.com/#{name}" }
       when "ko_fi"
-        "https://ko-fi.com/#{v}"
+        Array(v).map{|name| "https://ko-fi.com/#{name}" }
       when "liberapay"
-        "https://liberapay.com/#{v}"
+        Array(v).map{|name| "https://liberapay.com/#{name}" }
       when "custom"
-        v
+        Array(v)
       when "otechie"
-        "https://otechie.com/#{v}"
+        Array(v).map{|name| "https://otechie.com/#{name}" }
       when "patreon"
-        "https://patreon.com/#{v}"
+        Array(v).map{|name| "https://patreon.com/#{name}" }
       when "polar"
-        "https://polar.sh/#{v}"
+        Array(v).map{|name| "https://polar.sh/#{name}" }
       when 'buy_me_a_coffee'
-        "https://buymeacoffee.com/#{v}"
+        Array(v).map{|name| "https://buymeacoffee.com/#{name}" }
       when 'thanks_dev'
-        "https://thanks.dev/#{v}"
+        Array(v).map{|name| "https://thanks.dev/#{name}" }
       else
-        v
+        Array(v)
       end
     end.flatten.compact
   end
@@ -1600,6 +1600,7 @@ class Project < ApplicationRecord
     funding_links
       .reject{|f| f.include?('github.com/sponsors') || f.include?('opencollective.com') }
       .map { |link| normalize_funding_link(link) }
+      .compact
       .uniq
       .reject { |link| reject_invalid_funding_link?(link) }
   end
@@ -1698,12 +1699,12 @@ class Project < ApplicationRecord
   def normalize_funding_link(link)
     uri = URI.parse(link)
     uri.query = nil
-    
+
     # Remove www. subdomain for consistency
     if uri.host&.start_with?('www.')
       uri.host = uri.host[4..-1]
     end
-    
+
     # Normalize specific funding platforms
     case uri.host
     when 'tidelift.com'
@@ -1720,8 +1721,10 @@ class Project < ApplicationRecord
         uri.path = path_parts[0..-2].join('/')
       end
     end
-    
+
     uri.to_s
+  rescue URI::InvalidURIError
+    nil
   end
 
   def notify_collections_of_sync
