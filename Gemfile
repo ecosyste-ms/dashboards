@@ -45,7 +45,6 @@ gem 'octicons_helper'
 gem 'redis'
 gem 'purl'
 gem 'dalli'
-gem "connection_pool", "<3"
 gem 'csv'
 gem 'ostruct'
 gem "omniauth-github"
@@ -68,5 +67,4 @@ group :test do
   gem "rails-controller-testing"
   gem "factory_bot_rails"
   gem "database_cleaner-active_record"
-  gem "minitest", "~> 5"
 end
