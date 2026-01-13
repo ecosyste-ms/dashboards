@@ -1,6 +1,8 @@
 ---
 # Queue configuration with weights (higher number = higher priority)
-# Sidekiq will process 10 collection_sync jobs for every 1 default job
+# Sidekiq will process jobs proportionally based on weights
+:concurrency: 5
 :queues:
   - [collection_sync, 10]  # High priority queue for collection syncing
-  - [default, 1]           # Default queue with lower priority
+  - [default, 5]           # Default queue
+  - [opencollective, 1]    # Low priority queue for OpenCollective API calls (rate limited)

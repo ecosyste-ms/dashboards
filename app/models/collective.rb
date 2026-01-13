@@ -42,14 +42,14 @@ class Collective < ApplicationRecord
   before_save :set_no_license
 
   def self.sync_least_recently_synced
-    Collective.where(last_synced_at: nil).or(Collective.where("last_synced_at < ?", 1.day.ago)).order('last_synced_at asc nulls first').limit(500).each do |collective|
-      collective.sync_async
+    Collective.where(last_synced_at: nil).or(Collective.where("last_synced_at < ?", 1.day.ago)).order('last_synced_at asc nulls first').limit(20).each_with_index do |collective, index|
+      collective.sync_async(delay: index * 30.seconds)
     end
   end
 
   def self.sync_least_recently_synced_osc
-    Collective.collectives.where("last_synced_at < ?", 1.day.ago).order('last_synced_at asc nulls first').limit(500).each do |collective|
-      collective.sync_async
+    Collective.collectives.where("last_synced_at < ?", 1.day.ago).order('last_synced_at asc nulls first').limit(20).each_with_index do |collective, index|
+      collective.sync_async(delay: index * 30.seconds)
     end
   end
 
@@ -99,8 +99,12 @@ class Collective < ApplicationRecord
     owner['kind'] == 'organization'
   end
 
-  def sync_async
-    SyncCollectiveWorker.perform_async(id)
+  def sync_async(delay: nil)
+    if delay
+      SyncCollectiveWorker.perform_in(delay, id)
+    else
+      SyncCollectiveWorker.perform_async(id)
+    end
   end
 
   def fetch_from_open_collective_graphql
@@ -186,7 +190,8 @@ class Collective < ApplicationRecord
     }
 
     if data['type'] == 'COLLECTIVE'
-      collective_data = fetch_collective_from_open_collective_graphql 
+      sleep 0.5 # Rate limit between API calls
+      collective_data = fetch_collective_from_open_collective_graphql
       hash[:host] = collective_data.dig('host', 'slug')
     end
     
@@ -201,6 +206,7 @@ class Collective < ApplicationRecord
   def sync
     puts "Syncing #{slug}"
     fetch_account_details
+    sleep 0.5 # Rate limit between API calls
     sync_transactions
     if account_type == 'COLLECTIVE' && !duplicate?
       sync_owner
@@ -359,28 +365,33 @@ class Collective < ApplicationRecord
     total_count = first_page['data']['account']['memberOf']['totalCount']
     puts "Total count: #{total_count}"
     offset = 0
+    job_index = 0
     while offset < total_count
       puts "Loading page #{offset}"
       page = load_osc_projects(offset: offset)
       page['data']['account']['memberOf']['nodes'].each do |node|
         puts "Loading #{node['account']['slug']}"
         collective = Collective.find_or_create_by(slug: node['account']['slug'])
-        collective.sync_async if collective.last_synced_at.nil?
+        if collective.last_synced_at.nil?
+          collective.sync_async(delay: job_index * 30.seconds)
+          job_index += 1
+        end
       end
-      offset += 1000
+      offset += 100
+      sleep 1 # Rate limit between pagination requests
     end
   end
 
   def self.load_osc_projects(offset: 0)
     graphql_url = "https://opencollective.com/api/graphql/v2?personalToken=#{ENV['OPEN_COLLECTIVE_API_KEY']}"
-    
+
     query = <<~GRAPHQL
       query ContributionsSection(
         $orderBy: OrderByInput
       ) {
         account(slug: "opensource") {
           memberOf(
-            limit: 1000
+            limit: 100
             offset: #{offset}
             role: HOST
             accountType: COLLECTIVE
@@ -445,8 +456,9 @@ class Collective < ApplicationRecord
           to_account: node['toAccount'] ? node['toAccount']['slug'] : nil
         }
       end
-      Transaction.upsert_all(transactions, unique_by: :uuid)
-      offset += 1000
+      Transaction.upsert_all(transactions, unique_by: :uuid) if transactions.any?
+      offset += 100
+      sleep 0.5 # Rate limit between pagination requests
     end
     update(balance: current_balance)
   end
@@ -505,7 +517,7 @@ class Collective < ApplicationRecord
 
     resp = conn.post do |req|
       req.headers['Content-Type'] = 'application/json'
-      req.body = { query: query, variables: { account: { slug: slug }, limit: 1000, offset: offset } }.to_json
+      req.body = { query: query, variables: { account: { slug: slug }, limit: 100, offset: offset } }.to_json
     end
 
     JSON.parse(resp.body)
@@ -567,9 +579,13 @@ class Collective < ApplicationRecord
   end
 
   def self.sync_funders
-    funder_account_names.each do |account|
+    job_index = 0
+    funder_account_names.first(50).each do |account|
       collective = Collective.find_or_create_by(slug: account)
-      collective.sync_async if collective.last_synced_at.nil?
+      if collective.last_synced_at.nil?
+        collective.sync_async(delay: job_index * 30.seconds)
+        job_index += 1
+      end
     end
   end
 end
