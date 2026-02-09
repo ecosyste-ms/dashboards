@@ -1,4 +1,5 @@
 class CollectionsController < ApplicationController
+  skip_before_action :set_cache_headers
   before_action :set_period_vars, only: [:show, :engagement, :productivity, :finance, :responsiveness, :security, :projects]
 
   before_action :authenticate_user!

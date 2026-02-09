@@ -1,5 +1,6 @@
 class ProjectsController < ApplicationController
   skip_before_action :verify_authenticity_token, only: [:lookup]
+  skip_before_action :set_cache_headers, only: [:lookup, :sync, :syncing, :owner_collection, :create, :new, :add_to_list, :remove_from_list, :create_collection_from_dependencies]
   before_action :set_period_vars, only: [:show, :engagement, :productivity, :finance, :responsiveness, :security]
   before_action :set_range_and_period, only: [:show]
   before_action :authenticate_user!, only: [:index, :new, :create, :add_to_list, :remove_from_list, :create_collection_from_dependencies]
