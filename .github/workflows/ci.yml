@@ -57,7 +57,7 @@ jobs:
         run: syft . -o spdx-json=sbom.spdx.json
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom.spdx.json
