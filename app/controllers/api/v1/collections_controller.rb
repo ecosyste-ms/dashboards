@@ -3,11 +3,11 @@ class Api::V1::CollectionsController < Api::V1::ApplicationController
     @collections = Collection.visible  # Only show public collections
 
     if params[:sort].present? || params[:order].present?
-      sort = params[:sort].presence || 'collections.updated_at'
+      sort = sanitize_sort(Collection.sortable_columns, default: 'collections.updated_at')
       if params[:order] == 'asc'
-        @collections = @collections.order(Arel.sql(sort).asc.nulls_last)
+        @collections = @collections.order(sort.asc.nulls_last)
       else
-        @collections = @collections.order(Arel.sql(sort).desc.nulls_last)
+        @collections = @collections.order(sort.desc.nulls_last)
       end
     end
 
@@ -38,11 +38,11 @@ class Api::V1::CollectionsController < Api::V1::ApplicationController
     @projects = @collection.projects
     
     if params[:sort].present? || params[:order].present?
-      sort = params[:sort].presence || 'projects.updated_at'
+      sort = sanitize_sort(Project.sortable_columns, default: 'projects.updated_at')
       if params[:order] == 'asc'
-        @projects = @projects.order(Arel.sql(sort).asc.nulls_last)
+        @projects = @projects.order(sort.asc.nulls_last)
       else
-        @projects = @projects.order(Arel.sql(sort).desc.nulls_last)
+        @projects = @projects.order(sort.desc.nulls_last)
       end
     end
 

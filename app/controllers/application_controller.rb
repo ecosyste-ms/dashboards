@@ -38,6 +38,12 @@ class ApplicationController < ActionController::Base
     current_user.present?
   end
 
+  def sanitize_sort(allowed_columns, default: 'updated_at')
+    sort_param = params[:sort].presence || default
+    sql = allowed_columns[sort_param] || allowed_columns[default] || default
+    Arel.sql(sql)
+  end
+
   def range
     (params[:range].presence || 30).to_i
   end

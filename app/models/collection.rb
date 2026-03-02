@@ -1,6 +1,14 @@
 class Collection < ApplicationRecord
   include EcosystemsApiClient
-  
+
+  def self.sortable_columns
+    {
+      'collections.updated_at' => 'collections.updated_at',
+      'collections.created_at' => 'collections.created_at',
+      'name' => 'name',
+    }
+  end
+
   has_many :collection_projects, dependent: :destroy
   has_many :active_collection_projects, -> { active }, class_name: 'CollectionProject'
   has_many :projects, through: :active_collection_projects

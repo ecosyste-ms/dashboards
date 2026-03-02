@@ -2,6 +2,18 @@ class Project < ApplicationRecord
   include Stats
   include EcosystemsApiClient
 
+  def self.sortable_columns
+    {
+      'created_at' => 'created_at',
+      'updated_at' => 'updated_at',
+      'projects.created_at' => 'projects.created_at',
+      'projects.updated_at' => 'projects.updated_at',
+      'last_synced_at' => 'last_synced_at',
+      'issues_count' => 'issues_count',
+      'packages_count' => 'packages_count',
+    }
+  end
+
   has_many :collection_projects, dependent: :destroy
   has_many :active_collection_projects, -> { active }, class_name: 'CollectionProject'
   has_many :collections, through: :active_collection_projects
