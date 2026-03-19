@@ -106,7 +106,7 @@ GEM
       net-http (~> 0.5)
     faraday-retry (2.4.0)
       faraday (~> 2.0)
-    faraday-typhoeus (1.1.0)
+    faraday-typhoeus (2.0.0)
       faraday (~> 2.0)
       typhoeus (~> 1.4)
     ffi (1.17.3-aarch64-linux-musl)
@@ -174,10 +174,10 @@ GEM
       rack (>= 1.2, < 4)
       snaky_hash (~> 2.0, >= 2.0.3)
       version_gem (~> 1.1, >= 1.1.9)
-    octicons (19.23.0)
-    octicons_helper (19.23.0)
+    octicons (19.23.1)
+    octicons_helper (19.23.1)
       actionview
-      octicons (= 19.23.0)
+      octicons (= 19.23.1)
       railties
     omniauth (2.1.4)
       hashie (>= 3.4.6)
@@ -453,7 +453,7 @@ CHECKSUMS
   faraday-follow_redirects (0.5.0) sha256=5cde93c894b30943a5d2b93c2fe9284216a6b756f7af406a1e55f211d97d10ad
   faraday-net_http (3.4.2) sha256=f147758260d3526939bf57ecf911682f94926a3666502e24c69992765875906c
   faraday-retry (2.4.0) sha256=7b79c48fb7e56526faf247b12d94a680071ff40c9fda7cf1ec1549439ad11ebe
-  faraday-typhoeus (1.1.0) sha256=24c6147c213818dde3ebc50ae47ab92f9a7e554903aa362707126f749c6890e7
+  faraday-typhoeus (2.0.0) sha256=7a459529d782994caf8ce89ca181df3adb89dd471b8ab0b3851936ab566b4dd1
   ffi (1.17.3-aarch64-linux-musl) sha256=020b33b76775b1abacc3b7d86b287cef3251f66d747092deec592c7f5df764b2
   ffi (1.17.3-arm-linux-gnu) sha256=5bd4cea83b68b5ec0037f99c57d5ce2dd5aa438f35decc5ef68a7d085c785668
   ffi (1.17.3-arm-linux-musl) sha256=0d7626bb96265f9af78afa33e267d71cfef9d9a8eb8f5525344f8da6c7d76053
@@ -486,8 +486,8 @@ CHECKSUMS
   nokogiri (1.19.1-x86_64-linux-musl) sha256=4267f38ad4fc7e52a2e7ee28ed494e8f9d8eb4f4b3320901d55981c7b995fc23
   numerizer (0.1.1) sha256=10ec9efec62472b69a3a0e275a18a44baa595ce6e2e4cfc1678d5cb2974c336f
   oauth2 (2.0.18) sha256=bacf11e470dfb963f17348666d0a75c7b29ca65bc48fd47be9057cf91a403287
-  octicons (19.23.0) sha256=9209a19b340ddedbbb5a33d7fddeaf890508ca213302a5b19d32d236bc76cd2a
-  octicons_helper (19.23.0) sha256=700bdfc0cf43555756ca72473ed038f7479589e7da2ec39ce176a956fc1d0257
+  octicons (19.23.1) sha256=6eca3ac1b44de7b372a76624e1fd762ff8cd3546e57913bcd910e596814166db
+  octicons_helper (19.23.1) sha256=7d4b99e775060aff42f25d56f0c7cb214a53638529faf764cd9cdc1404ee7ca3
   omniauth (2.1.4) sha256=42a05b0496f0d22e1dd85d42aaf602f064e36bb47a6826a27ab55e5ba608763c
   omniauth-github (2.0.1) sha256=8ff8e70ac6d6db9d52485eef52cfa894938c941496e66b52b5e2773ade3ccad4
   omniauth-oauth2 (1.9.0) sha256=ed15f6d9d20991807ce114cc5b9c1453bce3645b64e51c68c90cff5ff153fee8
