@@ -179,10 +179,10 @@ GEM
       rack (>= 1.2, < 4)
       snaky_hash (~> 2.0, >= 2.0.6)
       version_gem (~> 1.1, >= 1.1.12)
-    octicons (19.28.1)
-    octicons_helper (19.28.1)
+    octicons (19.29.1)
+    octicons_helper (19.29.1)
       actionview
-      octicons (= 19.28.1)
+      octicons (= 19.29.1)
       railties
     omniauth (2.1.4)
       hashie (>= 3.4.6)
@@ -309,7 +309,7 @@ GEM
     simple_form (5.4.1)
       actionpack (>= 7.0)
       activemodel (>= 7.0)
-    sitemap_generator (7.0.1)
+    sitemap_generator (7.0.2)
       builder (~> 3.0)
     snaky_hash (2.0.6)
       hashie (>= 0.1.0, < 6)
@@ -494,8 +494,8 @@ CHECKSUMS
   nokogiri (1.19.4-x86_64-linux-musl) sha256=17dfb7c1fa194ae02fbf7c51a7afc8d278045ab3fdacfd86f91d02d7b274470b
   numerizer (0.1.1) sha256=10ec9efec62472b69a3a0e275a18a44baa595ce6e2e4cfc1678d5cb2974c336f
   oauth2 (2.0.24) sha256=3d4864983ab9fb7d3c836bca9635ef7b347631918fa890fcd9793d40ec82c186
-  octicons (19.28.1) sha256=0d474a547a6354647676a1afa804f9af08eb5ce9a2c383e048d59eeda07d7155
-  octicons_helper (19.28.1) sha256=9a6fdf25be38414144a516a8cfcf9779bbdec438b1a7ffc0e871ea73dd057dba
+  octicons (19.29.1) sha256=ca97d365a2a82da67bf3e9831010f435849dca1fbc4ffc00eb3dfe795faf9178
+  octicons_helper (19.29.1) sha256=b6ddfcc6ee9f6e378aa83807b55e0bb4291adfd253fff29e01450f6a6f59d029
   omniauth (2.1.4) sha256=42a05b0496f0d22e1dd85d42aaf602f064e36bb47a6826a27ab55e5ba608763c
   omniauth-github (2.0.1) sha256=8ff8e70ac6d6db9d52485eef52cfa894938c941496e66b52b5e2773ade3ccad4
   omniauth-oauth2 (1.9.0) sha256=ed15f6d9d20991807ce114cc5b9c1453bce3645b64e51c68c90cff5ff153fee8
@@ -546,7 +546,7 @@ CHECKSUMS
   sidekiq-status (4.0.0) sha256=3f45627efaa54c7f3e3b62dda358425af07fd7c596d6ab50d56ef3e45cbcdb67
   sidekiq-unique-jobs (8.1.0) sha256=6a7eaa61ac408197a542350df905687b506acae2f485da03b11d28b1c367dc35
   simple_form (5.4.1) sha256=58c3d229034c7e5545035c3271b6f030ef730c340b9d7d8eb730e0a385b20808
-  sitemap_generator (7.0.1) sha256=cb436da1c6cb073261a63c27e714e27b8292fca1e17ad503dac1db6518b3d2a8
+  sitemap_generator (7.0.2) sha256=c5c15f265edc4bb0eb3954c80a62f3f33576cf8b6e3af72e90f030613822134d
   snaky_hash (2.0.6) sha256=3663cae48cdef582b517025cf8a39d8789996eaf0b4ed89e2f0624836505654a
   sprockets (4.2.2) sha256=761e5a49f1c288704763f73139763564c845a8f856d52fba013458f8af1b59b1
   sprockets-rails (3.5.2) sha256=a9e88e6ce9f8c912d349aa5401509165ec42326baf9e942a85de4b76dbc4119e
