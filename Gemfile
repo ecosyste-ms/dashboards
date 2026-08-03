@@ -42,7 +42,7 @@ gem 'appsignal'
 gem 'chartkick'
 gem "after_commit_action"
 gem 'octicons_helper'
-gem 'redis'
+gem 'redis', '< 6' # actioncable pins >= 4, < 6 at runtime
 gem 'purl'
 gem 'dalli'
 gem 'csv'
