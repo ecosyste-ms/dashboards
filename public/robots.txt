@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+Disallow: /*?*previous_month=
+Disallow: /*?*previous_year=
