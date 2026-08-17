@@ -646,7 +646,8 @@ class Project < ApplicationRecord
     # Limit pages in test environment to avoid excessive HTTP requests
     max_pages = Rails.application.config.x.pagination_limits&.dig(:issues) || 50
     per_page = Rails.application.config.x.per_page_limits&.dig(:issues) || 100
-    issues_data = fetch_paginated_data(paginated_url, per_page: per_page, max_pages: max_pages)
+    issues_data = fetch_paginated_data(paginated_url, service: :issues, per_page: per_page, max_pages: max_pages)
+    return :error if issues_data.nil?
     
     # Process issues if we have any
     unless issues_data.empty?
@@ -787,7 +788,8 @@ class Project < ApplicationRecord
     # Limit pages in test environment to avoid excessive HTTP requests  
     max_pages = Rails.application.config.x.pagination_limits&.dig(:commits) || 50
     per_page = Rails.application.config.x.per_page_limits&.dig(:commits) || 1000
-    commits_data = fetch_paginated_data(paginated_url, per_page: per_page, max_pages: max_pages)
+    commits_data = fetch_paginated_data(paginated_url, service: :commits, per_page: per_page, max_pages: max_pages)
+    return :error if commits_data.nil?
     
     # Process commits if we have any
     unless commits_data.empty?
@@ -1036,7 +1038,8 @@ class Project < ApplicationRecord
   def fetch_packages(max_pages: 10)
     base_url = "https://packages.ecosyste.ms/api/v1/packages/lookup?repository_url=#{repository_url}"
     per_page = Rails.application.config.x.per_page_limits&.dig(:packages) || 100
-    packages_data = fetch_paginated_data(base_url, per_page: per_page, max_pages: max_pages)
+    packages_data = fetch_paginated_data(base_url, service: :packages, per_page: per_page, max_pages: max_pages)
+    return if packages_data.nil?
     
     packages_data.each do |pkg|
       p = packages.find_or_create_by(ecosystem: pkg['ecosystem'], name: pkg['name'])
@@ -1824,20 +1827,44 @@ class Project < ApplicationRecord
     nil
   end
 
-  def fetch_paginated_data(url, per_page: 100, max_pages: 10)
+  def fetch_paginated_data(url, service:, per_page: 100, max_pages: 10)
+    uri = URI.parse(url)
+    base_url, expected_host = case service
+    when :issues
+      ['https://issues.ecosyste.ms', 'issues.ecosyste.ms']
+    when :commits
+      ['https://commits.ecosyste.ms', 'commits.ecosyste.ms']
+    when :packages
+      ['https://packages.ecosyste.ms', 'packages.ecosyste.ms']
+    else
+      raise ArgumentError, "Unsupported paginated service: #{service}"
+    end
+
+    return nil unless uri.scheme == 'https' && uri.host == expected_host && uri.port == 443
+
+    request_path = "/#{uri.path.sub(%r{\A/+}, '')}"
+    allowed_path = case service
+    when :issues
+      request_path.start_with?('/api/v1/hosts/') && request_path.end_with?('/issues')
+    when :commits
+      request_path.start_with?('/api/v1/hosts/') && request_path.end_with?('/commits')
+    when :packages
+      request_path == '/api/v1/packages/lookup'
+    end
+    return nil unless allowed_path
+
+    request_params = URI.decode_www_form(uri.query.to_s).to_h
     data = []
     page = 1
+
+    conn = Faraday.new(url: base_url) do |faraday|
+      faraday.headers['User-Agent'] = 'dashboards.ecosyste.ms'
+      faraday.headers['X-Source'] = 'dashboards.ecosyste.ms'
+      faraday.adapter Faraday.default_adapter
+    end
     
     loop do
-      page_url = "#{url}#{url.include?('?') ? '&' : '?'}per_page=#{per_page}&page=#{page}"
-      conn = Faraday.new(url: page_url) do |faraday|
-        faraday.headers['User-Agent'] = 'dashboards.ecosyste.ms'
-        faraday.headers['X-Source'] = 'dashboards.ecosyste.ms'
-        faraday.response :follow_redirects
-        faraday.adapter Faraday.default_adapter
-      end
-      
-      response = conn.get
+      response = conn.get(request_path, request_params.merge(per_page: per_page, page: page))
       break unless response.success?
       
       page_data = JSON.parse(response.body)
@@ -1849,6 +1876,9 @@ class Project < ApplicationRecord
     end
     
     data
+  rescue URI::InvalidURIError => e
+    Rails.logger.error "Failed to parse paginated data URL #{url}: #{e.message}"
+    nil
   rescue => e
     Rails.logger.error "Failed to fetch paginated data from #{url}: #{e.message}"
     []

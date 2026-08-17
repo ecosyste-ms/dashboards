@@ -173,6 +173,21 @@ class ProjectTest < ActiveSupport::TestCase
     assert_not_nil project.reload.issues_last_synced_at
   end
 
+  test "sync_issues rejects an untrusted issues list URL" do
+    project = create(:project, :rails_project, :never_synced)
+    untrusted_url = 'http://169.254.169.254/latest/meta-data'
+
+    stub_request(:get, project.issues_api_url)
+      .to_return(status: 200, body: {
+        last_synced_at: Time.current.iso8601,
+        issues_url: untrusted_url
+      }.to_json)
+
+    assert_equal :error, project.sync_issues
+    assert_nil project.reload.issues_last_synced_at
+    assert_not_requested :get, untrusted_url
+  end
+
   test "sync_issues returns error when the lookup fails" do
     project = create(:project, :rails_project, :never_synced)
 
@@ -306,6 +321,21 @@ class ProjectTest < ActiveSupport::TestCase
       'https://commits.ecosyste.ms/api/v1/repositories/lookup?url=https%3A%2F%2Fgithub.com%2Frails%2Frails%3Ftab%3Dreadme%26view%3D1',
       project.commits_api_url
     )
+  end
+
+  test "sync_commits rejects an untrusted commits list URL" do
+    project = create(:project, :rails_project, :never_synced)
+    untrusted_url = 'http://169.254.169.254/latest/meta-data'
+
+    stub_request(:get, project.commits_api_url)
+      .to_return(status: 200, body: {
+        total_commits: 0,
+        commits_url: untrusted_url
+      }.to_json)
+
+    assert_equal :error, project.sync_commits
+    assert_nil project.reload.commits_last_synced_at
+    assert_not_requested :get, untrusted_url
   end
 
   test "sync_commits returns error when the lookup fails" do
