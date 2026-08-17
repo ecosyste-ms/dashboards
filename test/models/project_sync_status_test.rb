@@ -12,11 +12,16 @@ class ProjectSyncStatusTest < ActiveSupport::TestCase
   end
 
   test "sync methods update individual last_synced_at timestamps" do
+    commits_url = "https://commits.ecosyste.ms/api/v1/hosts/GitHub/repositories/test/sync-status/commits"
+
     # Mock the external API calls for commits
     stub_request(:get, @project.commits_api_url)
-      .to_return(status: 200, body: { commits_url: "http://example.com/commits" }.to_json)
+      .to_return(status: 200, body: {
+        total_commits: 0,
+        commits_url: commits_url
+      }.to_json)
     
-    stub_request(:get, /example\.com\/commits/)
+    stub_request(:get, %r{https://commits\.ecosyste\.ms/api/v1/hosts/GitHub/repositories/test/sync-status/commits})
       .to_return(status: 200, body: [].to_json)
 
     # Test commits sync updates commits_last_synced_at

@@ -132,6 +132,72 @@ class ProjectTest < ActiveSupport::TestCase
     end
   end
 
+  test "sync_issues returns pending for an unsynced upstream repository" do
+    project = create(:project, :rails_project, :never_synced)
+    issues_url = "https://issues.ecosyste.ms/api/v1/hosts/GitHub/repositories/rails/rails/issues"
+
+    stub_request(:get, project.issues_api_url)
+      .to_return(status: 200, body: {
+        last_synced_at: nil,
+        issues_url: issues_url
+      }.to_json)
+
+    assert_equal :pending, project.sync_issues
+    assert_nil project.reload.issues_last_synced_at
+    assert_not_requested :get, issues_url
+  end
+
+  test "issues lookup sends the repository URL as an encoded query parameter" do
+    project = create(:project, :rails_project, :never_synced)
+    project.stubs(:repository_url).returns('https://github.com/rails/rails?tab=readme&view=1')
+
+    assert_equal(
+      'https://issues.ecosyste.ms/api/v1/repositories/lookup?url=https%3A%2F%2Fgithub.com%2Frails%2Frails%3Ftab%3Dreadme%26view%3D1&priority=true',
+      project.issues_api_url
+    )
+  end
+
+  test "sync_issues completes for a synced repository with no issues" do
+    project = create(:project, :rails_project, :never_synced)
+    issues_url = "https://issues.ecosyste.ms/api/v1/hosts/GitHub/repositories/rails/rails/issues"
+
+    stub_request(:get, project.issues_api_url)
+      .to_return(status: 200, body: {
+        last_synced_at: Time.current.iso8601,
+        issues_url: issues_url
+      }.to_json)
+    stub_request(:get, /issues\.ecosyste\.ms\/api\/v1\/hosts\/GitHub\/repositories\/rails\/rails\/issues/)
+      .to_return(status: 200, body: [].to_json)
+
+    assert_equal :complete, project.sync_issues
+    assert_not_nil project.reload.issues_last_synced_at
+  end
+
+  test "sync_issues rejects an untrusted issues list URL" do
+    project = create(:project, :rails_project, :never_synced)
+    untrusted_url = 'http://169.254.169.254/latest/meta-data'
+
+    stub_request(:get, project.issues_api_url)
+      .to_return(status: 200, body: {
+        last_synced_at: Time.current.iso8601,
+        issues_url: untrusted_url
+      }.to_json)
+
+    assert_equal :error, project.sync_issues
+    assert_nil project.reload.issues_last_synced_at
+    assert_not_requested :get, untrusted_url
+  end
+
+  test "sync_issues returns error when the lookup fails" do
+    project = create(:project, :rails_project, :never_synced)
+
+    stub_request(:get, project.issues_api_url)
+      .to_return(status: 500, body: {}.to_json)
+
+    assert_equal :error, project.sync_issues
+    assert_nil project.reload.issues_last_synced_at
+  end
+
   test "ready? returns false for never synced project" do
     project = create(:project, last_synced_at: nil, sync_status: 'pending')
     assert_not project.ready?
@@ -204,6 +270,7 @@ class ProjectTest < ActiveSupport::TestCase
     # Mock the commits API response with correct structure
     stub_request(:get, project.commits_api_url)
       .to_return(status: 200, body: { 
+        total_commits: 0,
         commits_url: "https://commits.ecosyste.ms/api/v1/hosts/GitHub/repositories/rails/rails/commits" 
       }.to_json)
     
@@ -219,6 +286,66 @@ class ProjectTest < ActiveSupport::TestCase
     assert project.commits_last_synced_at > 1.minute.ago
   ensure
     WebMock.reset!
+  end
+
+  test "sync_commits returns pending for an accepted lookup" do
+    project = create(:project, :rails_project, :never_synced)
+
+    stub_request(:get, project.commits_api_url)
+      .to_return(status: 202, body: { status: 'pending' }.to_json)
+
+    assert_equal :pending, project.sync_commits
+    assert_nil project.reload.commits_last_synced_at
+  end
+
+  test "sync_commits returns pending until the upstream repository has a commit count" do
+    project = create(:project, :rails_project, :never_synced)
+    commits_url = "https://commits.ecosyste.ms/api/v1/hosts/GitHub/repositories/rails/rails/commits"
+
+    stub_request(:get, project.commits_api_url)
+      .to_return(status: 200, body: {
+        total_commits: nil,
+        commits_url: commits_url
+      }.to_json)
+
+    assert_equal :pending, project.sync_commits
+    assert_nil project.reload.commits_last_synced_at
+    assert_not_requested :get, commits_url
+  end
+
+  test "commits lookup sends the repository URL as an encoded query parameter" do
+    project = create(:project, :rails_project, :never_synced)
+    project.stubs(:repository_url).returns('https://github.com/rails/rails?tab=readme&view=1')
+
+    assert_equal(
+      'https://commits.ecosyste.ms/api/v1/repositories/lookup?url=https%3A%2F%2Fgithub.com%2Frails%2Frails%3Ftab%3Dreadme%26view%3D1',
+      project.commits_api_url
+    )
+  end
+
+  test "sync_commits rejects an untrusted commits list URL" do
+    project = create(:project, :rails_project, :never_synced)
+    untrusted_url = 'http://169.254.169.254/latest/meta-data'
+
+    stub_request(:get, project.commits_api_url)
+      .to_return(status: 200, body: {
+        total_commits: 0,
+        commits_url: untrusted_url
+      }.to_json)
+
+    assert_equal :error, project.sync_commits
+    assert_nil project.reload.commits_last_synced_at
+    assert_not_requested :get, untrusted_url
+  end
+
+  test "sync_commits returns error when the lookup fails" do
+    project = create(:project, :rails_project, :never_synced)
+
+    stub_request(:get, project.commits_api_url)
+      .to_return(status: 500, body: {}.to_json)
+
+    assert_equal :error, project.sync_commits
+    assert_nil project.reload.commits_last_synced_at
   end
 
   test "fetch repository data updates repository field" do
@@ -253,6 +380,7 @@ class ProjectTest < ActiveSupport::TestCase
     # Mock the commits API response with correct structure
     stub_request(:get, project.commits_api_url)
       .to_return(status: 200, body: { 
+        total_commits: 0,
         commits_url: "https://commits.ecosyste.ms/api/v1/hosts/GitHub/repositories/rails/rails/commits" 
       }.to_json)
     
@@ -283,6 +411,30 @@ class ProjectTest < ActiveSupport::TestCase
       assert_not_nil project.packages_last_synced_at
       assert_not_nil project.issues_last_synced_at
     end
+  end
+
+  test "full sync schedules retries for pending issues and commits" do
+    project = create(:project, :rails_project)
+    project.stubs(:safe_broadcast_sync_update)
+    project.stubs(:check_url)
+    project.stubs(:fetch_repository)
+    project.stubs(:fetch_packages)
+    project.stubs(:uninteresting_fork?).returns(false)
+    project.stubs(:fetch_readme)
+    project.stubs(:sync_tags)
+    project.stubs(:sync_advisories)
+    project.stubs(:sync_issues).returns(:pending)
+    project.stubs(:sync_dependabot_issues)
+    project.stubs(:sync_commits).returns(:pending)
+    project.stubs(:fetch_dependencies)
+    project.stubs(:update_sourced_dependency_collections)
+    project.stubs(:fetch_collective)
+    project.stubs(:fetch_github_sponsors)
+    project.stubs(:ping)
+    project.stubs(:notify_collections_of_sync)
+    SyncPendingProjectDataWorker.expects(:schedule).with(project.id, %w[issues commits])
+
+    project.sync
   end
 
   test "licenses method flattens and deduplicates package licenses with repository license" do
