@@ -608,13 +608,14 @@ class Project < ApplicationRecord
   end
 
   def issues_api_url
-    "https://issues.ecosyste.ms/api/v1/repositories/lookup?url=#{repository_url}&priority=true"
+    query = URI.encode_www_form(url: repository_url, priority: true)
+    "https://issues.ecosyste.ms/api/v1/repositories/lookup?#{query}"
   end
 
   def sync_issues
     return unless repository.present?
     
-    response = fetch_json_with_retry(issues_api_url)
+    response = fetch_sync_status_with_retry(:issues)
     return :error unless response
 
     response_data = response[:data]
@@ -748,13 +749,14 @@ class Project < ApplicationRecord
   end
 
   def commits_api_url
-    "https://commits.ecosyste.ms/api/v1/repositories/lookup?url=#{repository_url}"
+    query = URI.encode_www_form(url: repository_url)
+    "https://commits.ecosyste.ms/api/v1/repositories/lookup?#{query}"
   end
 
   def sync_commits
     return unless repository.present?
     
-    response = fetch_json_with_retry(commits_api_url)
+    response = fetch_sync_status_with_retry(:commits)
     return :error unless response
 
     response_data = response[:data]
@@ -1791,15 +1793,24 @@ class Project < ApplicationRecord
     # Continue sync even if broadcast fails
   end
 
-  def fetch_json_with_retry(url, retries: 3)
-    conn = Faraday.new(url: url) do |faraday|
+  def fetch_sync_status_with_retry(service, retries: 3)
+    base_url, request_params = case service
+    when :issues
+      ['https://issues.ecosyste.ms', { url: repository_url, priority: true }]
+    when :commits
+      ['https://commits.ecosyste.ms', { url: repository_url }]
+    else
+      raise ArgumentError, "Unsupported sync service: #{service}"
+    end
+
+    conn = Faraday.new(url: base_url) do |faraday|
       faraday.headers['User-Agent'] = 'dashboards.ecosyste.ms'
       faraday.headers['X-Source'] = 'dashboards.ecosyste.ms'
       faraday.response :follow_redirects
       faraday.adapter Faraday.default_adapter
     end
     
-    response = conn.get
+    response = conn.get('/api/v1/repositories/lookup', request_params)
     return nil unless response.success?
 
     {
@@ -1809,7 +1820,7 @@ class Project < ApplicationRecord
   rescue => e
     retries -= 1
     retry if retries > 0
-    Rails.logger.error "Failed to fetch JSON from #{url}: #{e.message}"
+    Rails.logger.error "Failed to fetch #{service} sync status: #{e.message}"
     nil
   end
 

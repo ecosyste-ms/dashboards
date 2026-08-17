@@ -147,6 +147,16 @@ class ProjectTest < ActiveSupport::TestCase
     assert_not_requested :get, issues_url
   end
 
+  test "issues lookup sends the repository URL as an encoded query parameter" do
+    project = create(:project, :rails_project, :never_synced)
+    project.stubs(:repository_url).returns('https://github.com/rails/rails?tab=readme&view=1')
+
+    assert_equal(
+      'https://issues.ecosyste.ms/api/v1/repositories/lookup?url=https%3A%2F%2Fgithub.com%2Frails%2Frails%3Ftab%3Dreadme%26view%3D1&priority=true',
+      project.issues_api_url
+    )
+  end
+
   test "sync_issues completes for a synced repository with no issues" do
     project = create(:project, :rails_project, :never_synced)
     issues_url = "https://issues.ecosyste.ms/api/v1/hosts/GitHub/repositories/rails/rails/issues"
@@ -286,6 +296,16 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal :pending, project.sync_commits
     assert_nil project.reload.commits_last_synced_at
     assert_not_requested :get, commits_url
+  end
+
+  test "commits lookup sends the repository URL as an encoded query parameter" do
+    project = create(:project, :rails_project, :never_synced)
+    project.stubs(:repository_url).returns('https://github.com/rails/rails?tab=readme&view=1')
+
+    assert_equal(
+      'https://commits.ecosyste.ms/api/v1/repositories/lookup?url=https%3A%2F%2Fgithub.com%2Frails%2Frails%3Ftab%3Dreadme%26view%3D1',
+      project.commits_api_url
+    )
   end
 
   test "sync_commits returns error when the lookup fails" do
