@@ -134,6 +134,8 @@ class Project < ApplicationRecord
     update_columns(sync_status: 'syncing', updated_at: sync_started_at)
     
     begin
+      pending_data_syncs = []
+
       # Broadcast initial sync start
       safe_broadcast_sync_update
       
@@ -155,11 +157,13 @@ class Project < ApplicationRecord
         safe_broadcast_sync_update  # After tags sync
         
         sync_step("Advisories sync") { sync_advisories }
-        sync_step("Issues sync") { sync_issues }
+        issues_sync_result = sync_step("Issues sync") { sync_issues }
+        pending_data_syncs << 'issues' unless issues_sync_result == :complete
         sync_step("Dependabot issues sync") { sync_dependabot_issues }  # Sync Dependabot security issues for GitHub repos
         safe_broadcast_sync_update  # After issues sync
         
-        sync_step("Commits sync") { sync_commits }
+        commits_sync_result = sync_step("Commits sync") { sync_commits }
+        pending_data_syncs << 'commits' unless commits_sync_result == :complete
         safe_broadcast_sync_update  # After commits sync
         
         sync_step("Dependencies fetch") { fetch_dependencies }
@@ -169,6 +173,8 @@ class Project < ApplicationRecord
         sync_step("Collective fetch") { fetch_collective }
         sync_step("GitHub sponsors fetch") { fetch_github_sponsors }
       end
+
+      SyncPendingProjectDataWorker.schedule(id, pending_data_syncs) if pending_data_syncs.any?
       
       return if destroyed?
       
@@ -608,10 +614,15 @@ class Project < ApplicationRecord
   def sync_issues
     return unless repository.present?
     
-    response_data = fetch_json_with_retry(issues_api_url)
-    return unless response_data
+    response = fetch_json_with_retry(issues_api_url)
+    return :error unless response
+
+    response_data = response[:data]
+    return :pending if response[:status] == 202 || response_data['status'] == 'pending'
+    return :pending if response_data['last_synced_at'].blank?
     
     issues_list_url = response_data['issues_url']
+    return :error if issues_list_url.blank?
     
     # Find the oldest issue we haven't synced yet by looking at created_at timestamps
     # Start from the oldest unsynced issue to avoid re-processing the same records
@@ -674,9 +685,10 @@ class Project < ApplicationRecord
     # Always set the timestamp when we successfully get a response
     self.issues_last_synced_at = Time.now
     self.save
-    
+    :complete
   rescue => e
     Rails.logger.error "Error fetching issues for #{repository_url}: #{e.message}"
+    :error
   end
 
   def sync_dependabot_issues
@@ -742,8 +754,12 @@ class Project < ApplicationRecord
   def sync_commits
     return unless repository.present?
     
-    response_data = fetch_json_with_retry(commits_api_url)
-    return unless response_data
+    response = fetch_json_with_retry(commits_api_url)
+    return :error unless response
+
+    response_data = response[:data]
+    return :pending if response[:status] == 202 || response_data['status'] == 'pending'
+    return :pending if response_data['total_commits'].nil?
     
     # Find the latest commit timestamp we have to start from where we left off
     # Use timestamp instead of created_at since commits are ordered by their actual commit time
@@ -761,6 +777,8 @@ class Project < ApplicationRecord
     
     # Add parameters to URL
     commits_list_url = response_data['commits_url']
+    return :error if commits_list_url.blank?
+
     separator = commits_list_url.include?('?') ? '&' : '?'
     paginated_url = "#{commits_list_url}#{separator}#{url_params.join('&')}"
     
@@ -817,9 +835,10 @@ class Project < ApplicationRecord
     # Always set the timestamp when we successfully get a response
     self.commits_last_synced_at = Time.now
     self.save
-
+    :complete
   rescue => e
     Rails.logger.error "Error fetching commits for #{repository_url}: #{e.message}"
+    :error
   end
 
   def tags_api_url(page: 1, per_page: 100)
@@ -1752,9 +1771,10 @@ class Project < ApplicationRecord
     start_time = Time.current
     
     begin
-      yield
+      result = yield
       duration = (Time.current - start_time).round(2)
       Rails.logger.debug "Completed sync step: #{step_name} for project #{id} in #{duration}s"
+      result
     rescue => e
       duration = (Time.current - start_time).round(2)
       Rails.logger.warn "Failed sync step: #{step_name} for project #{id} after #{duration}s - #{e.class.name}: #{e.message}"
@@ -1781,8 +1801,11 @@ class Project < ApplicationRecord
     
     response = conn.get
     return nil unless response.success?
-    
-    JSON.parse(response.body)
+
+    {
+      status: response.status,
+      data: JSON.parse(response.body)
+    }
   rescue => e
     retries -= 1
     retry if retries > 0
