@@ -8,9 +8,8 @@ require 'mocha/minitest'
 require 'factory_bot_rails'
 
 require 'sidekiq_unique_jobs/testing'
-require 'sidekiq/testing'
 require 'database_cleaner/active_record'
-Sidekiq::Testing.fake!
+Sidekiq.testing!(:fake)
 
 class ActiveSupport::TestCase
   include FactoryBot::Syntax::Methods
