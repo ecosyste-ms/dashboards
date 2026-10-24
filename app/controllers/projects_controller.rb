@@ -169,7 +169,7 @@ class ProjectsController < ApplicationController
       purl_obj = Purl.parse(params[:purl])
       
       # Try to find project by purl (without version)
-      purl_without_version = purl_obj.with(version: nil).to_s
+      purl_without_version = Package.purl_without_version(purl_obj)
       @project = Package.find_by(purl: purl_without_version)&.project
       
       handle_project_result(purl_obj, params[:purl])

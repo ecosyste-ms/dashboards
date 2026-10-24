@@ -12,8 +12,14 @@ class Package < ApplicationRecord
   scope :active, -> { where("(metadata ->> 'status') is null") }
   scope :order_by_rankings, -> { order(Arel.sql("(metadata -> 'rankings' ->> 'average')::numeric asc nulls last")) }
 
+  # Julia's uuid qualifier is required by the PURL spec but General registry names are unique,
+  # so packages match with or without it
+  IGNORED_QUALIFIERS = { "julia" => %w[uuid] }.freeze
+
   def self.purl_without_version(purl)
-    Purl.parse(purl.to_s).with(version: nil).to_s
+    parsed = Purl.parse(purl.to_s)
+    qualifiers = parsed.qualifiers&.except(*IGNORED_QUALIFIERS.fetch(parsed.type, []))
+    parsed.with(version: nil, qualifiers: qualifiers.presence).to_s
   end
 
   def self.convert_ecosystem_to_purl_type(ecosystem)

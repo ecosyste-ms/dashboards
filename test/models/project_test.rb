@@ -373,6 +373,18 @@ class ProjectTest < ActiveSupport::TestCase
     end
   end
 
+  test "fetch_packages stores julia purls without the uuid qualifier" do
+    WebMock.enable!
+    project = create(:project, :never_synced, url: "https://github.com/JuliaLang/Dates.jl")
+    record = { "ecosystem" => "julia", "name" => "Dates", "purl" => "pkg:julia/Dates?uuid=ade2ca70-3891-5945-98fb-dc099432e06a" }
+    stub_request(:get, /packages\.ecosyste\.ms\/api\/v1\/packages\/lookup/).to_return(status: 200, body: [record].to_json, headers: { "Content-Type" => "application/json" })
+
+    project.fetch_packages
+
+    assert_equal "pkg:julia/Dates", project.packages.find_by(name: "Dates").purl
+    assert_equal project, Project.find_by_purl("pkg:julia/Dates?uuid=ade2ca70-3891-5945-98fb-dc099432e06a")
+  end
+
   test "sync respects individual timestamps" do
     WebMock.enable!
     project = create(:project, :rails_project, :never_synced, url: "https://github.com/rails/rails-sync-test")
