@@ -411,6 +411,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_url(existing_project)
   end
 
+  test "should lookup project by julia purl with the uuid qualifier" do
+    existing_project = create(:project, :with_repository, url: "https://github.com/JuliaLang/Dates.jl")
+    create(:package, project: existing_project, ecosystem: "julia", name: "Dates", purl: "pkg:julia/Dates")
+
+    assert_no_difference("Project.count") do
+      post lookup_projects_url, params: { purl: "pkg:julia/Dates@1.9.0?uuid=ade2ca70-3891-5945-98fb-dc099432e06a" }
+    end
+
+    assert_redirected_to project_url(existing_project)
+  end
+
   test "should lookup project by NPM package URL using purl conversion" do
     existing_project = create(:project, :with_repository, url: "https://github.com/test/repo")
     package = create(:package, project: existing_project, ecosystem: 'npm', name: 'semver-compare')
@@ -560,13 +571,6 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     purl_string = "pkg:npm/nonexistent-package@1.0.0"
     repository_url = "https://github.com/user/nonexistent-package"
     
-    # Mock the purl parsing and API response
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/nonexistent-package').twice
-    Purl.expects(:parse).with(purl_string).returns(mock_purl)
-    
     # Mock API response
     mock_response = mock()
     mock_response.expects(:success?).returns(true)
@@ -587,15 +591,6 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "should show error when API lookup fails for purl parameter" do
     purl_string = "pkg:npm/nonexistent-package@1.0.0"
-    
-    # Mock the purl parsing
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/nonexistent-package').twice
-    mock_purl.expects(:name).returns('nonexistent-package')
-    mock_purl.expects(:type).returns('npm')
-    Purl.expects(:parse).with(purl_string).returns(mock_purl)
     
     # Mock API failure
     mock_response = mock()

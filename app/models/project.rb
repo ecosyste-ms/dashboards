@@ -60,7 +60,7 @@ class Project < ApplicationRecord
   scope :between, ->(start_date, end_date) { where('projects.created_at > ?', start_date).where('projects.created_at < ?', end_date) }
 
   def self.purl_without_version(purl)
-    Purl.parse(purl.to_s).with(version: nil).to_s
+    Package.purl_without_version(purl)
   end
 
   def self.sync_least_recently_synced
@@ -1043,7 +1043,11 @@ class Project < ApplicationRecord
     
     packages_data.each do |pkg|
       p = packages.find_or_create_by(ecosystem: pkg['ecosystem'], name: pkg['name'])
-      p.purl = pkg['purl']
+      p.purl = begin
+        pkg['purl'].present? ? Package.purl_without_version(pkg['purl']) : pkg['purl']
+      rescue Purl::Error
+        pkg['purl']
+      end
       p.metadata = pkg.except('repo_metadata')
       p.save(touch: false)
     end
@@ -1112,7 +1116,7 @@ class Project < ApplicationRecord
   end
 
   def self.find_by_purl(purl)
-    package_url(purl.to_s).first
+    Package.package_url(purl.to_s).first&.project
   end
 
   def readme_file_name
