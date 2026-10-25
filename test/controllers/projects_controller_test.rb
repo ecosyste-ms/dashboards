@@ -411,17 +411,23 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_url(existing_project)
   end
 
+  test "should lookup project by julia purl with the uuid qualifier" do
+    existing_project = create(:project, :with_repository, url: "https://github.com/JuliaLang/Dates.jl")
+    create(:package, project: existing_project, ecosystem: "julia", name: "Dates", purl: "pkg:julia/Dates")
+
+    assert_no_difference("Project.count") do
+      post lookup_projects_url, params: { purl: "pkg:julia/Dates@1.9.0?uuid=ade2ca70-3891-5945-98fb-dc099432e06a" }
+    end
+
+    assert_redirected_to project_url(existing_project)
+  end
+
   test "should lookup project by NPM package URL using purl conversion" do
     existing_project = create(:project, :with_repository, url: "https://github.com/test/repo")
     package = create(:package, project: existing_project, ecosystem: 'npm', name: 'semver-compare')
     package.update(purl: 'pkg:npm/semver-compare')
-    
-    # Mock the Purl conversion - registry URL with version returns versioned purl
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version)
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/semver-compare')
-    Purl.expects(:from_registry_url).with("https://www.npmjs.com/package/semver-compare").returns(mock_purl)
+
+    Purl.expects(:from_registry_url).with("https://www.npmjs.com/package/semver-compare").returns(Purl.parse('pkg:npm/semver-compare'))
     
     assert_no_difference('Project.count') do
       post lookup_projects_url, params: { url: "https://www.npmjs.com/package/semver-compare" }
@@ -434,13 +440,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     existing_project = create(:project, :with_repository, url: "https://github.com/test/repo")
     package = create(:package, project: existing_project, ecosystem: 'npm', name: 'lodash')
     package.update(purl: 'pkg:npm/lodash')
-    
-    # Mock the Purl conversion for versioned URL
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version)
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/lodash')
-    Purl.expects(:from_registry_url).with("https://www.npmjs.com/package/lodash/v/4.17.21").returns(mock_purl)
+
+    Purl.expects(:from_registry_url).with("https://www.npmjs.com/package/lodash/v/4.17.21").returns(Purl.parse('pkg:npm/lodash@4.17.21'))
     
     assert_no_difference('Project.count') do
       post lookup_projects_url, params: { url: "https://www.npmjs.com/package/lodash/v/4.17.21" }
@@ -452,14 +453,9 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "should create project when repository URL resolved from package URL" do
     registry_url = "https://www.npmjs.com/package/nonexistent-package"
     repository_url = "https://github.com/user/nonexistent-package"
-    
-    # Mock PURL conversion
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice  # Called twice: once for package lookup, once for API lookup
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/nonexistent-package').twice
-    Purl.expects(:from_registry_url).with(registry_url).returns(mock_purl)
-    
+
+    Purl.expects(:from_registry_url).with(registry_url).returns(Purl.parse('pkg:npm/nonexistent-package'))
+
     # Mock API response
     mock_response = mock()
     mock_response.expects(:success?).returns(true)
@@ -480,14 +476,9 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "should fallback to original URL when API lookup fails" do
     registry_url = "https://www.npmjs.com/package/nonexistent-package"
-    
-    # Mock PURL conversion
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice  # Called twice: once for package lookup, once for API lookup
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/nonexistent-package').twice
-    Purl.expects(:from_registry_url).with(registry_url).returns(mock_purl)
-    
+
+    Purl.expects(:from_registry_url).with(registry_url).returns(Purl.parse('pkg:npm/nonexistent-package'))
+
     # Mock API failure
     mock_response = mock()
     mock_response.expects(:success?).returns(false)
@@ -518,12 +509,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     repository_url_without_scheme = "github.com/user/test-package"
     normalized_url = "https://github.com/user/test-package"
 
-    # Mock PURL conversion
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/test-package').twice
-    Purl.expects(:from_registry_url).with(registry_url).returns(mock_purl)
+    Purl.expects(:from_registry_url).with(registry_url).returns(Purl.parse('pkg:npm/test-package'))
 
     # Mock API response returning URL without scheme
     mock_response = mock()
@@ -560,13 +546,6 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     purl_string = "pkg:npm/nonexistent-package@1.0.0"
     repository_url = "https://github.com/user/nonexistent-package"
     
-    # Mock the purl parsing and API response
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/nonexistent-package').twice
-    Purl.expects(:parse).with(purl_string).returns(mock_purl)
-    
     # Mock API response
     mock_response = mock()
     mock_response.expects(:success?).returns(true)
@@ -587,15 +566,6 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "should show error when API lookup fails for purl parameter" do
     purl_string = "pkg:npm/nonexistent-package@1.0.0"
-    
-    # Mock the purl parsing
-    mock_purl = mock()
-    mock_purl_without_version = mock()
-    mock_purl.expects(:with).with(version: nil).returns(mock_purl_without_version).twice
-    mock_purl_without_version.expects(:to_s).returns('pkg:npm/nonexistent-package').twice
-    mock_purl.expects(:name).returns('nonexistent-package')
-    mock_purl.expects(:type).returns('npm')
-    Purl.expects(:parse).with(purl_string).returns(mock_purl)
     
     # Mock API failure
     mock_response = mock()

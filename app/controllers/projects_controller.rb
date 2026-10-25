@@ -151,8 +151,7 @@ class ProjectsController < ApplicationController
       begin
         purl_obj = Purl.from_registry_url(params[:url])
         if purl_obj
-          # Remove version from purl since packages table stores purl without version
-          purl_without_version = purl_obj.with(version: nil).to_s
+          purl_without_version = Package.purl_without_version(purl_obj)
           @project = Package.find_by(purl: purl_without_version)&.project
         end
       rescue => e
@@ -169,7 +168,7 @@ class ProjectsController < ApplicationController
       purl_obj = Purl.parse(params[:purl])
       
       # Try to find project by purl (without version)
-      purl_without_version = purl_obj.with(version: nil).to_s
+      purl_without_version = Package.purl_without_version(purl_obj)
       @project = Package.find_by(purl: purl_without_version)&.project
       
       handle_project_result(purl_obj, params[:purl])
@@ -729,8 +728,7 @@ class ProjectsController < ApplicationController
 
   def resolve_repository_url_from_purl(purl_obj)
     begin
-      # Remove version for API lookup
-      purl_without_version = purl_obj.with(version: nil).to_s
+      purl_without_version = Package.purl_without_version(purl_obj)
 
       # Call packages.ecosyste.ms API
       response = Faraday.get("https://packages.ecosyste.ms/api/v1/packages/lookup", { purl: purl_without_version }, {'User-Agent' => 'dashboards.ecosyste.ms'})

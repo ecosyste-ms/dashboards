@@ -21,4 +21,16 @@ class PackageTest < ActiveSupport::TestCase
     assert low_index < high_index, "Low ranking package should come before high ranking package"
     assert high_index < null_index, "Packages with rankings should come before packages without rankings"
   end
+
+  test "purl_without_version drops the julia uuid qualifier" do
+    assert_equal "pkg:julia/Dates", Package.purl_without_version("pkg:julia/Dates@1.9.0?uuid=ade2ca70-3891-5945-98fb-dc099432e06a")
+    assert_equal "pkg:deb/debian/curl?arch=amd64", Package.purl_without_version("pkg:deb/debian/curl@7.0?arch=amd64")
+  end
+
+  test "package_url matches julia packages with or without the uuid qualifier" do
+    package = create(:package, ecosystem: "julia", name: "Dates", purl: "pkg:julia/Dates")
+
+    assert_equal [package], Package.package_url("pkg:julia/Dates").to_a
+    assert_equal [package], Package.package_url("pkg:julia/Dates?uuid=ade2ca70-3891-5945-98fb-dc099432e06a").to_a
+  end
 end
