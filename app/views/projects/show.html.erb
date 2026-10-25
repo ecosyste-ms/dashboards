@@ -14,7 +14,33 @@
       </div>
       <span class="sticky-sentinel"></span>
       <div class="dashboard-grid">  
+        <div class="full-width-widget">
+          <div class="card well p-3 border-0">
+
+            <div class="card-body">
+              <h5 class="card-title">Commits</h5>
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="stat-card mb-2">
+                    <div class="stat-card-body">
+                      <span class="stat-card-title stat-card-title--large stat-card-number-negative">
+                        110,978 </svg>
+                      </span>
+                      <span class="stat-card-text stat-card-text">111,262 last period</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-9">
+                  <div class="chart-wrapper chart-wrapper--shallow">
+                    <!-- chart goes here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <% if @project.repository %>
+        
         <div class="three-equal-widgets">
 
           <div class="card well p-3 border-0">
