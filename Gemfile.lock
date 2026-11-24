@@ -47,13 +47,9 @@ GEM
     after_commit_action (1.1.0)
       activerecord (>= 3.0.0)
       activesupport (>= 3.0.0)
-    anonymous_loader (0.1.5)
-      version_gem (~> 1.1, >= 1.1.17)
     appsignal (5.0.7)
       logger
       rack (>= 2.0.0)
-    auth-sanitizer (0.2.5)
-      version_gem (~> 1.1, >= 1.1.16)
     base64 (0.3.0)
     bigdecimal (4.1.3)
     bindex (0.8.1)
@@ -122,7 +118,7 @@ GEM
     groupdate (6.8.0)
       activesupport (>= 7.2)
     hashdiff (1.3.0)
-    hashie (5.2.0)
+    hashie (6.0.0)
       logger
     i18n (1.15.2)
       concurrent-ruby (~> 1.0)
@@ -177,16 +173,14 @@ GEM
     nokogiri (1.19.7-x86_64-linux-musl)
       racc (~> 1.4)
     numerizer (0.1.1)
-    oauth2 (2.1.0)
-      anonymous_loader (~> 0.1, >= 0.1.5)
-      auth-sanitizer (~> 0.2, >= 0.2.5)
+    oauth2 (2.0.10)
       faraday (>= 0.17.3, < 4.0)
       jwt (>= 1.0, < 4.0)
       logger (~> 1.2)
       multi_xml (~> 0.5)
       rack (>= 1.2, < 4)
-      snaky_hash (~> 2.0, >= 2.0.9)
-      version_gem (~> 1.1, >= 1.1.17)
+      snaky_hash (~> 2.0)
+      version_gem (>= 1.1.8, < 3)
     octicons (19.42.0)
     octicons_helper (19.42.0)
       actionview
@@ -325,9 +319,9 @@ GEM
       activemodel (>= 7.0)
     sitemap_generator (7.1.1)
       builder (~> 3.0)
-    snaky_hash (2.0.9)
-      hashie (>= 0.1.0, < 6)
-      version_gem (~> 1.1, >= 1.1.16)
+    snaky_hash (2.0.1)
+      hashie
+      version_gem (~> 1.1, >= 1.1.1)
     sprockets (4.4.1)
       concurrent-ruby (~> 1.1)
       logger
@@ -440,9 +434,7 @@ CHECKSUMS
   activesupport (8.1.4.1) sha256=16ac4f341ca65c85a1fcdb8ac73f68891aae9e3c4a6f9c3a27daed8b00017ed7
   addressable (2.10.0) sha256=5e13b9c001adf01dd65ad6e0d2a91d2bc07885c0ff2b83f48cbcd95e08d9de62
   after_commit_action (1.1.0) sha256=28a4730735a042127ddee9246334a087fbbe1c20f28791509ddbdc8723017238
-  anonymous_loader (0.1.5) sha256=c96a4a1b5f49f320037fae63e931ac15b3823686e4f0ee6f24f75a0ade4227cb
   appsignal (5.0.7) sha256=7316aa63071f2cba80be44e3571f7a8fe1e3e18781d4a6029016456df8b1a8e0
-  auth-sanitizer (0.2.5) sha256=eec0f5ee354931a1431be6f7025bc38d03db1731a2185726cbe6248e49bee177
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   bigdecimal (4.1.3) sha256=61ebe1e5e559bdc3cc6f2c0ee7f427321fc838f59611c294356eb04d6e21cf66
   bindex (0.8.1) sha256=7b1ecc9dc539ed8bccfc8cb4d2732046227b09d6f37582ff12e50a5047ceb17e
@@ -485,7 +477,7 @@ CHECKSUMS
   ffi (1.17.4-x86_64-linux-musl) sha256=3fdf9888483de005f8ef8d1cf2d3b20d86626af206cbf780f6a6a12439a9c49e
   groupdate (6.8.0) sha256=16f90ea18ca981c38e41e592416480b28353aa5e5cc3e7cb13a68b8fb5d40510
   hashdiff (1.3.0) sha256=0b6724b8f3fef3961acc09489b175698ce0b7fd22c9cc5aa559d280cc6b65649
-  hashie (5.2.0) sha256=357a22635195c2e3911fbbc3de9a7d528843d1f42ab0aae02171048f16332d72
+  hashie (6.0.0) sha256=0896391e9fc7a259bfe02abbb1a026b3e142e2f464e10255261d50a0eda18e3e
   i18n (1.15.2) sha256=00f9eb62412fe593b2a65a97daa75300d37abb8f7202ec748e94b6d46a9dd1b5
   io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
   irb (1.19.0) sha256=55ee56acbdd6c9fe06a2e6909f46a24e5c41f45f16906bab04e8049cf46f1d27
@@ -511,7 +503,7 @@ CHECKSUMS
   nokogiri (1.19.7-x86_64-linux-gnu) sha256=25865ccb462f714e712fdf8906fde07849cb6704a808e3d629d75baa5af5dd3b
   nokogiri (1.19.7-x86_64-linux-musl) sha256=464d1f3dfb0d53cf54c0c6a7e23e8e91cf68ec3cafc2b27dc4a7682f2d9bf546
   numerizer (0.1.1) sha256=10ec9efec62472b69a3a0e275a18a44baa595ce6e2e4cfc1678d5cb2974c336f
-  oauth2 (2.1.0) sha256=69925a45030c231cdca3ef4a54a8e848e5319f12c3fdbbfa5065dfbeb4efe835
+  oauth2 (2.0.10) sha256=8f132679598d21885d4bcc68d7e7e6ef0a29f9a782abca00d67d884280dc3a42
   octicons (19.42.0) sha256=021b709379a0191ea1241b8dbd4b8690c74df5d5193c306d1f49611b1f3aa7cb
   octicons_helper (19.42.0) sha256=9570f0d5834b99dd7613e788899ae1a9611ff9640690a7f06f0870d86cdcc4d3
   omniauth (2.4.2) sha256=c2c94fa578de19a4eb90150c96cd80c316ceb6e067d4fd1c7921048dcc882a65
@@ -571,7 +563,7 @@ CHECKSUMS
   sidekiq-unique-jobs (8.1.0) sha256=6a7eaa61ac408197a542350df905687b506acae2f485da03b11d28b1c367dc35
   simple_form (5.4.1) sha256=58c3d229034c7e5545035c3271b6f030ef730c340b9d7d8eb730e0a385b20808
   sitemap_generator (7.1.1) sha256=ab2a133d512a7b33ed713a27a9977f61d8379c9943e3b79900243fc1c4f7f81d
-  snaky_hash (2.0.9) sha256=e93e6ec80632f8c8c4a3fe6e25d51eaef253e0e58dc7100f0f8370320feb3128
+  snaky_hash (2.0.1) sha256=1ac87ec157fcfe7a460e821e0cd48ae1e6f5e3e082ab520f03f31a9259dbdc31
   sprockets (4.4.1) sha256=fbd665edad0916de5c7abefef0fc616866a60c5e48ce2846f39ac3fc5df9e184
   sprockets-rails (3.5.2) sha256=a9e88e6ce9f8c912d349aa5401509165ec42326baf9e942a85de4b76dbc4119e
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
